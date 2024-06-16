@@ -63,7 +63,9 @@
       const overlay = document.getElementById('overlay');
       let detectFaces = true;
       let showLandmarks = true;
-      const recognizedFaces = new Set();
+      const faceLabelCounts_array = [];
+      const recognitionThreshold = 10; // Number of consistent frames to recognize a face
+      let lastConfirmedLabel = null;
 
       async function loadModels() {
         console.log("Loading models...");
@@ -134,38 +136,42 @@
             const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
             const { box } = detection.detection;
             const { x, y, width, height } = box;
-            const drawBox = new faceapi.draw.DrawBox({ x, y, width, height }, { label: bestMatch.toString() });
-            drawBox.draw(overlay);
+            const label = bestMatch.label;
+            console.log("label: ",label);
 
-            if (!recognizedFaces.has(bestMatch.label) && bestMatch.label !== 'unknown') {
-              recognizedFaces.add(bestMatch.label);
-              //sendSMS(bestMatch.label);
+            if (label !== 'unknown') {
+              faceLabelCounts_array.push(label);
+              
+              if (faceLabelCounts_array.length >= recognitionThreshold) {
+                const mostFrequentLabel = getMostFrequentLabel(faceLabelCounts_array);
+                lastConfirmedLabel = mostFrequentLabel;
+                faceLabelCounts_array.length = 0; // Reset the array
+              }
+            }
+
+            if (lastConfirmedLabel) {
+              const drawBox = new faceapi.draw.DrawBox({ x, y, width, height }, { label: lastConfirmedLabel });
+              drawBox.draw(overlay);
             }
           });
         }, 100);
       }
 
-      function sendSMS(personName) {
-        const now = new Date();
-        const time = now.toLocaleTimeString();
-        const date = now.toLocaleDateString();
-        const message = `Good morning ${personName}, your checkin time is ${time} on ${date} powered by AI Facial recognition`;
-
-        $.ajax({
-          url: '/send-sms',
-          method: 'POST',
-          contentType: 'application/json',
-          data: JSON.stringify({
-            to: '+27604154773', // Replace with the actual recipient phone number
-            message: message
-          }),
-          success: function(response) {
-            console.log('SMS sent successfully');
-          },
-          error: function(error) {
-            console.error('Error sending SMS:', error);
-          }
+      function getMostFrequentLabel(arr) {
+        const labelCounts = {};
+        arr.forEach(label => {
+          labelCounts[label] = (labelCounts[label] || 0) + 1;
         });
+
+        let mostFrequentLabel = '';
+        let maxCount = 0;
+        for (const label in labelCounts) {
+          if (labelCounts[label] > maxCount) {
+            maxCount = labelCounts[label];
+            mostFrequentLabel = label;
+          }
+        }
+        return mostFrequentLabel;
       }
 
       $('#toggleDetection').click(function() {
