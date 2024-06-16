@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Face Recognition</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script defer src="face-api.js"></script>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .video-container {
+      position: relative;
+      width: 640px;
+      height: 480px;
+      margin: auto;
+      margin-top: 20px;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #controls {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .btn-secondary {
+      background-color: #6c757d;
+      border-color: #6c757d;
+    }
+
+    .btn-secondary:hover {
+      background-color: #5a6268;
+      border-color: #545b62;
+    }
+  </style>
+</head>
+<body>
+  <div class="container text-center">
+    <!-- <h1>AI Facial Recognition</h1> -->
+    <div class="video-container">
+      <video id="video" autoplay muted></video>
+      <canvas id="overlay" width="640" height="480"></canvas>
+    </div>
+    <div id="controls" class="mt-3">
+      <button id="toggleDetection" class="btn btn-secondary mr-2">Activate Detection</button>
+      <button id="toggleLandmarks" class="btn btn-secondary mr-2">Activate Landmarks</button>
+      <button id="register" class="btn btn-secondary">Register Face</button>
+    </div>
+  </div>
+
+  <script>
+    $(document).ready(function() {
+      const video = document.getElementById('video');
+      const overlay = document.getElementById('overlay');
+      let detectFaces = true;
+      let showLandmarks = true;
+      const recognizedFaces = new Set();
+
+      async function loadModels() {
+        console.log("Loading models...");
+        await Promise.all([
+          faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+          faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+          faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+          faceapi.nets.faceExpressionNet.loadFromUri('/models')
+        ]);
+        console.log("Models loaded.");
+        startVideo();
+      }
+
+      function startVideo() {
+        navigator.mediaDevices.getUserMedia({ video: {} })
+          .then(stream => {
+            video.srcObject = stream;
+            video.onloadedmetadata = () => {
+              video.play();
+              console.log("Video stream started.");
+              processVideo();
+            };
+          })
+          .catch(err => console.error('Error accessing webcam:', err));
+      }
+
+      async function processVideo() {
+        const displaySize = { width: video.videoWidth, height: video.videoHeight };
+        faceapi.matchDimensions(overlay, displaySize);
+
+        const labeledFaceDescriptors = await fetch('/get-labeled-faces')
+            .then(res => res.json())
+            .then(data => data.map(d => new faceapi.LabeledFaceDescriptors(
+                d.label, d.descriptors.map(descriptor => new Float32Array(descriptor))
+            )));
+
+        if (!labeledFaceDescriptors.length) {
+          console.error("No labeled face descriptors found.");
+          return;
+        }
+
+        const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
+
+        setInterval(async () => {
+          if (!detectFaces) {
+            const ctx = overlay.getContext('2d');
+            ctx.clearRect(0, 0, overlay.width, overlay.height); // Clear the overlay
+            return;
+          }
+
+          const detections = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options())
+              .withFaceLandmarks()
+              .withFaceDescriptors()
+              .withFaceExpressions();
+
+          const resizedDetections = faceapi.resizeResults(detections, displaySize);
+          const ctx = overlay.getContext('2d');
+          ctx.clearRect(0, 0, overlay.width, overlay.height);
+          faceapi.draw.drawDetections(overlay, resizedDetections);
+
+          if (showLandmarks) {
+            faceapi.draw.drawFaceLandmarks(overlay, resizedDetections);
+          }
+
+          faceapi.draw.drawFaceExpressions(overlay, resizedDetections);
+
+          resizedDetections.forEach(detection => {
+            const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+            const { box } = detection.detection;
+            const { x, y, width, height } = box;
+            const drawBox = new faceapi.draw.DrawBox({ x, y, width, height }, { label: bestMatch.toString() });
+            drawBox.draw(overlay);
+
+            if (!recognizedFaces.has(bestMatch.label) && bestMatch.label !== 'unknown') {
+              recognizedFaces.add(bestMatch.label);
+              //sendSMS(bestMatch.label);
+            }
+          });
+        }, 100);
+      }
+
+      function sendSMS(personName) {
+        const now = new Date();
+        const time = now.toLocaleTimeString();
+        const date = now.toLocaleDateString();
+        const message = `Good morning ${personName}, your checkin time is ${time} on ${date} powered by AI Facial recognition`;
+
+        $.ajax({
+          url: '/send-sms',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({
+            to: '+27604154773', // Replace with the actual recipient phone number
+            message: message
+          }),
+          success: function(response) {
+            console.log('SMS sent successfully');
+          },
+          error: function(error) {
+            console.error('Error sending SMS:', error);
+          }
+        });
+      }
+
+      $('#toggleDetection').click(function() {
+        detectFaces = !detectFaces;
+      });
+
+      $('#toggleLandmarks').click(function() {
+        showLandmarks = !showLandmarks;
+      });
+
+      $('#register').click(function() {
+        window.location.href = '/register';
+      });
+
+      // Load models and start video processing
+      loadModels();
+    });
+  </script>
+</body>
+</html>

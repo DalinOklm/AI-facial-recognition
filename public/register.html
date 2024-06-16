@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Registration</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script defer src="/face-api.js"></script>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #f8f9fa;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    #video-container {
+      position: relative;
+      width: 640px;
+      height: 480px;
+      margin-bottom: 20px;
+    }
+
+    video, canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    #username {
+      width: 200px;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ced4da;
+    }
+
+    .btn-secondary {
+      background-color: #6c757d;
+      border-color: #6c757d;
+      padding: 10px 20px;
+      border-radius: 5px;
+    }
+
+    .btn-secondary:hover {
+      background-color: #5a6268;
+      border-color: #545b62;
+    }
+
+    .capture-count {
+      margin-top: 10px;
+      font-size: 18px;
+      color: #495057;
+    }
+  </style>
+</head>
+<body>
+  <h1>Register Face</h1>
+  <div id="controls">
+    <input type="text" id="username" placeholder="Enter your name" class="form-control">
+    <button id="capture" class="btn btn-secondary">Capture Face</button>
+    <button id="go-to-recognition" class="btn btn-secondary">Go to Recognition</button>
+  </div>
+  <div id="video-container">
+    <video id="video" autoplay muted></video>
+    <canvas id="overlay"></canvas>
+  </div>
+  <div class="capture-count" id="capture-count">Captured Pictures: 0</div>
+  <audio id="click-sound" src="/sounds/camera-shutter-click-03.wav"></audio>
+  <script>
+    $(document).ready(function() {
+      const video = document.getElementById('video');
+      const overlay = document.getElementById('overlay');
+      const clickSound = document.getElementById('click-sound');
+      const captureCountElem = document.getElementById('capture-count');
+      let captureCount = 0;
+      let labeledFaceDescriptors = [];
+
+      async function loadModels() {
+        console.log("Loading models...");
+        await Promise.all([
+          faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+          faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+          faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+          faceapi.nets.faceExpressionNet.loadFromUri('/models')
+        ]);
+        console.log("Models loaded.");
+        startVideo();
+      }
+
+      function startVideo() {
+        navigator.mediaDevices.getUserMedia({ video: {} })
+          .then(stream => {
+            video.srcObject = stream;
+            video.onloadedmetadata = () => {
+              video.play();
+              console.log("Video stream started.");
+              detectFaces();
+            };
+          })
+          .catch(err => console.error('Error accessing webcam:', err));
+      }
+
+      async function captureFace() {
+        const username = $('#username').val();
+        if (!username) {
+            alert('Please enter your name.');
+            return;
+        }
+
+        const detections = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options())
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+        if (detections) {
+            const capturedCanvas = document.createElement('canvas');
+            capturedCanvas.width = video.videoWidth;
+            capturedCanvas.height = video.videoHeight;
+            const ctx = capturedCanvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, capturedCanvas.width, capturedCanvas.height);
+            capturedCanvas.toBlob(async (blob) => {
+            const formData = new FormData();
+            formData.append('image', blob, 'face.png');
+            await fetch(`/upload?label=${username}`, {
+                method: 'POST',
+                body: formData
+            }).then(response => response.text()).then(data => {
+                console.log(data);
+                clickSound.play();
+                captureCount++;
+                captureCountElem.textContent = `Captured Pictures: ${captureCount}`;
+            }).catch(error => {
+                console.error('Error uploading image:', error);
+            });
+            });
+        } else {
+            console.log('No face detected for registration.');
+        }
+      }
+
+      async function detectFaces() {
+        const displaySize = { width: video.videoWidth, height: video.videoHeight };
+        faceapi.matchDimensions(overlay, displaySize);
+
+        setInterval(async () => {
+          const detections = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options())
+            .withFaceLandmarks()
+            .withFaceDescriptors()
+            .withFaceExpressions();
+
+          const resizedDetections = faceapi.resizeResults(detections, displaySize);
+          const ctx = overlay.getContext('2d');
+          ctx.clearRect(0, 0, overlay.width, overlay.height);
+          faceapi.draw.drawDetections(overlay, resizedDetections);
+          faceapi.draw.drawFaceLandmarks(overlay, resizedDetections);
+          faceapi.draw.drawFaceExpressions(overlay, resizedDetections);
+
+          if (labeledFaceDescriptors.length > 0) {
+            const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
+            const results = resizedDetections.map(d => faceMatcher.findBestMatch(d.descriptor));
+            results.forEach((result, i) => {
+              const box = resizedDetections[i].detection.box;
+              const text = result.toString();
+              const drawBox = new faceapi.draw.DrawBox(box, { label: text });
+              drawBox.draw(overlay);
+            });
+          }
+        }, 100);
+      }
+
+      $('#capture').click(captureFace);
+      $('#go-to-recognition').click(() => {
+        window.location.href = '/real-time-face-recognition';
+      });
+
+      loadModels();
+    });
+  </script>
+</body>
+</html>

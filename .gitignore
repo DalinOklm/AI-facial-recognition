@@ -34,3 +34,7 @@ dist/
 *.local
 *.dev
 *.prod
+
+
+public/uploads
+
