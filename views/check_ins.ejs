@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+      integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="css/dashboard.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/plugins/daterangepicker.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <!-- vendor css -->
+    <title></title>
+    <style>
+            .highlight {
+        animation: highlightAnimation 10s ease infinite;
+      }
+
+      @keyframes highlightAnimation {
+        0%, 100% {
+          background-color: transparent;
+        }
+        50% {
+          background-color: rgb(212, 237, 218);
+        }
+      }
+    </style>
+  </head>
+  <body class="font-Poppins">
+    <!-- Header -->
+    <header>
+      <nav class="container flex items-center py-4 mt-4 sm:mt-12">
+        <div class="py-1"></div>
+      
+        <!-- Dropdown menu -->
+        <div class="relative ml-auto sm:hidden">
+          <button type="button" class="flex items-center text-bookmark-blue focus:outline-none" onclick="toggleDropdown()">
+            <i class="text-2xl fas fa-bars"></i>
+          </button>
+          <ul class="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg hidden" id="dropdownMenu">
+            <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/check_outs">CheckOutS</a></li>
+            <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/check_ins">CheckInS</a></li>
+            <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/dashboard">Dashboard</a></li>
+            <li class="text-bookmark-red cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/logout">logout</a></li>
+          </ul>
+        </div>
+      
+        <!-- Menu items -->
+        <ul class="hidden sm:flex flex-1 justify-end items-center gap-12 text-bookmark-blue uppercase text-xs" id="menuItems">
+          <li class="cursor-pointer"><a href="/check_outs">CheckOutS</a></li>
+          <li class="cursor-pointer"><a href="/check_ins">CheckInS</a></li>
+          <li class="cursor-pointer"><a href="/logout">Logout</a></li>
+          <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/logout" class="text-bookmark-red"></a></li>
+        </ul>
+      </nav>
+    </header>
+
+
+
+
+    <!-- FAQ -->
+<section class="bg-bookmark-white py-20">
+<div class="container">
+  <div class="lg:w-4/4 mx-auto py-8 px-6 bg-white rounded-xl">
+    <h1 class="font-bold text-5xl text-center mb-8">Employee check in list</h1>
+    <!-- <div class="row">
+      <div class="col-md-6">
+				<div class="card">
+					<div class="card-header">
+						<h5>Simple Date Range Picker With a Callback</h5>
+					</div>
+					<div class="card-body">
+						<input type="text" name="daterange" class="form-control" value="08/01/2023 - 08/15/2023" />
+					</div>
+				</div>
+			</div>
+    </div> -->
+    <hr>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h5>Select Date Range Dalin</h5>
+          </div>
+          <div class="card-body">
+            <!-- <input type="text" name="daterange" id="date-range" class="form-control" /> -->
+            <button onclick="generateCSV()" type="button" class="bg-sky-500/75 mt-12 flex self-center btn btn-purple hover:bg-bookmark-white hover:text-black justify-center">Export to CSV test</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <br>
+    <hr>
+    <br>
+    <button id="toggleSoundButton" class="bg-blue-500 text-white py-2 px-4 rounded-lg">
+      Activate Sound
+    </button>
+    <!-- <button onclick="generate_checkin_CSV()" type="submit" class="bg-sky-500/75 mt-12 flex self-center btn btn-purple hover:bg-bookmark-white hover:text-black justify-center">
+      Export to CSV
+    </button> -->
+    <br>
+    <br>
+    <hr>
+
+    <hr>
+    <br>
+    <br>
+   
+  </div>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+
+    // function generate_checkin_CSV() {
+    //     window.location.href = '/generate_checkin_csv';
+    //   }
+
+        function formatDate(dateString) {
+        const [month, day, year] = dateString.split('/');
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      }
+
+      function generateCSV() {
+        const dateRange = $('#date-range').val();
+        const [startDate, endDate] = dateRange.split(' - ');
+
+        const formattedStartDate = formatDate(startDate);
+        const formattedEndDate = formatDate(endDate);
+
+        //console.log('Generating CSV for Date Range:', formattedStartDate, 'to', formattedEndDate);
+
+        // Redirect to the backend route with the selected date range as query parameters
+        window.location.href = `/generate_checkin_csv?start=${formattedStartDate}&end=${formattedEndDate}`;
+      }
+
+  function toggleDropdown() {
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    dropdownMenu.classList.toggle('hidden');
+  }
+</script>
+
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+      // JavaScript section
+    const toggleSoundButton = document.getElementById('toggleSoundButton');
+    let soundEnabled = false;
+
+    toggleSoundButton.addEventListener('click', () => {
+      soundEnabled = !soundEnabled; // Toggle the sound state
+      toggleSoundButton.textContent = soundEnabled ? 'Sound On' : 'Sound Off';
+    });
+
+
+
+    socket.on('chatMessage', (data) => {
+          // Extract data from the socket event
+          const userId = data.userId;
+          const userName = data.userName;
+          const checkInDate = data.checkInDate || ''; // Handle null value
+          const checkInTime = data.checkInTime || ''; // Handle null value
+
+          // console.log("userId: ",userId);
+          // console.log("userName: ",userName);
+          // console.log("checkInDate: ",checkInDate);
+          // console.log("checkInTime: ",checkInTime);
+
+          // Get the table body by its ID
+          const tableBody = document.getElementById('table-body');
+
+          // Find and remove the existing <tr> element with the matching user ID
+          const existingRow = document.getElementById(userId);
+          if (existingRow) {
+            // console.log("delete div: ", existingRow)
+            tableBody.removeChild(existingRow);
+          }
+
+          // Create a new <tr> element
+          const newRow = document.createElement('tr');
+          newRow.id = userId; // Set the ID based on the user's ID
+
+          // Add the 'highlight' class to the new check-in element
+          newRow.classList.add('highlight');
+
+          // Create table data cells and populate them with data
+          const userNameCell = document.createElement('td');
+          userNameCell.textContent = userName;
+
+          const statusCell = document.createElement('td');
+          statusCell.innerHTML = '<a href="#!" class="btn btn-success btn-sm">Present</a>';
+
+          const dateCell = document.createElement('td');
+          dateCell.textContent = checkInDate;
+
+          const checkInCell = document.createElement('td');
+          checkInCell.textContent = checkInTime;
+
+          const checkOutCell = document.createElement('td');
+          checkOutCell.textContent = ''; // Initialize as empty
+
+          const hoursCell = document.createElement('td');
+          hoursCell.textContent = ''; // Initialize as empty
+
+          // Append the cells to the new row
+          newRow.appendChild(userNameCell);
+          newRow.appendChild(statusCell);
+          newRow.appendChild(dateCell);
+          newRow.appendChild(checkInCell);
+          newRow.appendChild(checkOutCell);
+          newRow.appendChild(hoursCell);
+
+          // Prepend the new row to the table body
+          tableBody.insertBefore(newRow, tableBody.firstChild);
+
+           // Play the sound only if sound is enabled
+           if (soundEnabled) {
+            playCheckinSound();
+          }
+
+           // After 3 seconds, remove the 'highlight' class
+           setTimeout(() => {
+            checkInDiv.classList.remove('highlight');
+          }, 3000);
+
+        });
+
+
+        function playCheckinSound() {
+        const audio = document.getElementById('checkinAudio');
+        const audioSource = '/sounds/notify_bell.wav'; // Update with the actual path
+
+        audio.muted = false;
+        audio.src = audioSource;
+        audio.currentTime = 0;
+        audio.play();
+      }
+
+</script>
+
+<audio id="checkinAudio" muted>
+  <source src="" type="audio/wav">
+</audio>
+
+ <!-- Required Js -->
+ <script src="assets/js/vendor-all.min.js"></script>
+ <script src="assets/js/plugins/bootstrap.min.js"></script>
+ <script src="assets/js/ripple.js"></script>
+ <script src="assets/js/pcoded.min.js"></script>
+<script src="assets/js/menu-setting.min.js"></script>
+
+<!-- datepicker js -->
+<script src="assets/js/plugins/moment.min.js"></script>
+<script src="assets/js/plugins/daterangepicker.js"></script>
+<script src="assets/js/pages/ac-datepicker.js"></script>
+</footer>
+<audio id="checkinAudio" muted>
+  <source src="" type="audio/wav">
+</audio>
+
+
+ <!-- [ Main Content ] start -->
+ <div class="row">
+   
+  <!-- customar project  start -->
+  <div style="margin: 20px;" class="col-xl-12">
+    <div style="padding-top: 20px; margin-top: 20px;" class="card">
+      <h1 class="font-bold text-5xl text-center mb-8">Employee check in list</h1>
+      <div style="margin: 20px;" class="row">
+      <div class="col-md-3 col-xl-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center m-l-0">
+                    <div class="col-auto">
+                        <i class="icon feather icon-users f-30 text-c-red"></i>
+                    </div>
+                    <div class="col-auto">
+                        <h6 class="text-muted m-b-10">Total Check-in</h6>
+                        <h2 class="m-b-0"><%= dataToSend.check_in_count %></h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+              <div class="row align-items-center m-l-0">
+                  <div class="col-auto">
+                      <i class="icon feather icon-users f-30 text-c-red"></i>
+                  </div>
+                  <div class="col-auto">
+                      <h6 class="text-muted m-b-10">Total Check-out</h6>
+                      <h2 class="m-b-0"><%= dataToSend.check_in_count %></h2>
+                  </div>
+              </div>
+          </div>
+      </div>
+    </div>
+          <div class="col-md-3 col-xl-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Select Date Range</h5>
+                    </div>
+                    <div class="card-body">
+                        <input type="text" name="daterange" id="date-range" class="form-control" />
+                        <br>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control add_task_todo" placeholder="Search here..." required="">
+                            <div class="input-group-append">
+                                <button style="background-color: blue; " class="btn waves-effect waves-light btn-primary btn-msg-send" type="button"><i class="fas fa-search"></i></button>
+                            </div>
+                        </div>
+                      
+
+                        <button onclick="generateCSV()" type="button" class="bg-sky-500/75 mt-12 flex self-center btn btn-purple hover:bg-bookmark-white hover:text-black justify-center">Export to CSV test</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      <!-- <div class="col-md-3 col-xl-4">
+              <div class="col-md-12">
+                <div class="card">
+                  <div class="card-header">
+                    <h5>Select Date Range</h5>
+                  </div>
+                  <div class="card-body">
+                    <input type="text" name="daterange" id="date-range" class="form-control" />
+                    <br>
+                    <div class="input-group mb-3">
+                      <input type="text" class="form-control add_task_todo" placeholder="Search here..." required="">
+                      <div class="input-group-append">
+                          <button style="background-color: blue; " class="btn waves-effect waves-light btn-primary btn-msg-send" type="button"><i class="fas fa-search"></i></button>
+                      </div>
+                    </div>
+                    <div style="background-color: blue; margin-top: 10px;" class="btn-group">
+                      <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                        Period Format
+                      </button>
+                      <ul class="dropdown-menu">
+                          <li>
+                            <a href="#">Daily</a>
+                          </li>
+                          <li>
+                            <a href="#">Weekly</a>
+                          </li>
+                          <li>
+                            <a href="#">Monthly</a>
+                          </li>
+                      </ul>
+                    </div>
+                    
+                    <button onclick="generateCSV()" type="button" class="bg-sky-500/75 mt-12 flex self-center btn btn-purple hover:bg-bookmark-white hover:text-black justify-center">Export to CSV test</button>
+                   
+                  </div>
+                </div>
+              </div>
+    </div> -->
+  </div>
+      <div class="card-body">
+        <div class="row align-items-center m-l-0">
+          <div class="col-sm-6">
+          </div>
+          <div class="col-sm-6 text-right">
+            <button class="btn btn-success btn-sm btn-round has-ripple" data-toggle="modal" data-target="#modal-report">DL-Register v3.0</button>
+          </div>
+        </div>
+        <div id="the_research_table"></div>
+        <br>
+        <br>
+        <div class="table-responsive">
+          <table id="report-table" class="table table-bordered table-striped mb-0">
+            <thead>
+              <tr>
+                <th><%= new Date(dataToSend.new_query_results[0].check_in).toDateString() %></th>
+              </tr>
+              <tr>
+                <th>User</th>
+                <th>Status</th>
+                <th>Check-in</th>
+                <th>Check-out</th>
+                <th>Hours</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <% if (dataToSend && dataToSend.new_query_results) { %>
+                <% for (let i = 0; i < dataToSend.new_query_results.length; i++) { %>
+                  <tr id="<%= dataToSend.new_query_results[i].id %>">
+                    <td><%= dataToSend.new_query_results[i].user_name %></td>
+                    <td> <% if (dataToSend.new_query_results[i].check_in !== 'Absent') { %>
+                      <a href="#!" class="btn btn-success btn-sm btn-success">Present</a>
+                    <% } else { %>
+                      <a href="#!" class="btn btn-info btn-sm btn-danger">Absent</a>
+                    <% } %></td>
+                    <td>
+                      <% if (dataToSend.new_query_results[i].check_in !== 'Absent') { %>
+                        <%= new Date(dataToSend.new_query_results[i].check_in).toLocaleTimeString() %>
+                      <% }  %>
+                    </td>
+                    <td>
+                      <% if (dataToSend.new_query_results[i].check_out !== null) { %>
+                        <%= dataToSend.new_query_results[i].check_out.toLocaleTimeString('en-US', { hour12: false }) %>
+                      <% } %>
+                    </td>                  
+                    <td>
+                      <% if (dataToSend.new_query_results[i].total_hours !== '') { %>
+                        <a href="#!" class="btn btn-info btn-sm"><%= dataToSend.new_query_results[i].total_hours %> hours</a>
+                      <% } %>
+                    </td>                    
+                  </tr>
+                <% } %>
+              <% } else { %>
+                <tr>
+                  <td colspan="5">No data available</td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>          
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- customar project  end -->
+</div>
+<!-- [ Main Content ] end -->
+
+<script>
+  $(document).ready(function() {
+      // Event listener for the search button click
+      $(".btn-msg-send").click(function() {
+          // Get the selected date range, search value, and period format
+          const dateRange = $("#date-range").val();
+          const searchValue = $(".add_task_todo").val();
+
+
+          // Debugging: Log the values
+          // console.log('Date Range:', dateRange);
+          // console.log('Search Value:', searchValue);
+
+          // Create an object with the data to send
+          const requestData = {
+              searchValue: searchValue,
+              startDate: dateRange.split(" - ")[0],
+              endDate: dateRange.split(" - ")[1],
+          };
+
+          // Debugging: Log the requestData object
+          //console.log('Request Data:', requestData);
+
+          // Send an AJAX POST request to the backend route
+          $.ajax({
+              type: "POST",
+              url: "/search", // Replace with your backend route URL
+              data: requestData,
+              success: function(response) {
+                  // Handle the response data (e.g., update the table with the results)
+                  //console.log('Response Data:', response.data); // This will log the data received from the server
+                  // Update your table or display the results as needed
+                   // Create a new table element
+              // Sort the data by date
+           // Sort the data by date
+            response.data.sort((a, b) => new Date(a.check_in) - new Date(b.check_in));
+
+            // Create a container div to hold all the week tables
+            const containerDiv = $("<div>");
+
+            let currentWeekData = [];
+            let currentWeekStart = null;
+            let currentMonth = null;
+
+            // Loop through the sorted data
+            response.data.forEach(function(item) {
+                const itemDate = new Date(item.check_in);
+                var daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                var dayOfWeek = daysOfWeek[itemDate.getDay()];
+                //console.log( "\n",dayOfWeek, " the date: ", itemDate, "\n");
+                const month = itemDate.getMonth();
+
+
+                var weekposition = 0;
+                if (dayOfWeek == "Friday") {
+                  weekposition += 1;
+                }
+
+                console.log("weekposition: ", weekposition);
+
+                // Debugging: Log the item being processed
+                //console.log('Processing Item:', item);
+
+                // If it's a new month, start a new week
+                if (currentMonth === null || currentMonth !== month) {
+                    currentMonth = month;
+
+                    // If there is previous week data, create a table for it
+                    if (currentWeekData.length > 0) {
+                        const weekTable = createWeekTable(currentWeekData, dayOfWeek, weekposition);
+                        containerDiv.append(weekTable);
+
+                        // Debugging: Log the generated week table
+                        //console.log('Generated Week Table:', weekTable);
+                    }
+
+                    // Reset the current week data
+                    currentWeekData = [];
+                    currentWeekStart = itemDate;
+
+                    // Debugging: Log the start of a new week
+                    // console.log('Start of New Week:', itemDate);
+                }
+
+                // Add the item to the current week data
+                currentWeekData.push(item);
+
+                // Debugging: Log the item added to the current week
+                // console.log('Added to Current Week:', item);
+            });
+
+            // Check if there is any remaining data for the last week
+            if (currentWeekData.length > 0) {
+                const weekTable = createWeekTable(currentWeekData, currentWeekStart, currentWeekData[currentWeekData.length - 1]);
+                containerDiv.append(weekTable);
+
+                // Debugging: Log the generated week table for the last week
+                //console.log('Generated Week Table (Last Week):', weekTable);
+            }
+
+            // Replace the existing table with the container div containing week tables
+            $("#the_research_table").replaceWith(containerDiv);
+
+            // Debugging: Log the generated HTML
+            //console.log('Final HTML Structure:', containerDiv.html());
+
+
+              },
+              error: function(error) {
+                  console.error("Error:", error);
+                  // Handle errors or show an error message to the user
+              },
+          });
+      });
+  });
+
+
+
+  // Function to create a table for a week
+function createWeekTable(weekData, weekStart, weekEnd) {
+    const weekTable = $("<table>").addClass("table table-bordered table-striped mb-0");
+    
+    const weekNumber = "Week " + weekEnd;
+    const headerRow = $("<tr>").append($("<th>").text(weekNumber));
+    weekTable.append(headerRow);
+
+    // Create the table header with column names
+    const columnHeaderRow = $("<tr>");
+    columnHeaderRow.append("<th>User</th>");
+    columnHeaderRow.append("<th>Status</th>");
+    columnHeaderRow.append("<th>Check-in</th>");
+    columnHeaderRow.append("<th>Check-out</th>");
+    columnHeaderRow.append("<th>Hours</th>");
+    weekTable.append(columnHeaderRow);
+
+    // Create the table body with data for the week
+    weekData.forEach(function(item) {
+        const row = $("<tr>");
+        row.append("<td>" + item.user_name + "</td>");
+
+        if (item.check_in !== 'Absent') {
+            row.append('<td><a href="#!" class="btn btn-success btn-sm btn-success">Present</a></td>');
+            row.append('<td>' + new Date(item.check_in).toLocaleTimeString() + '</td>');
+            row.append('<td>' + (item.check_out ? new Date(item.check_out).toLocaleTimeString('en-US', { hour12: false }) : '') + '</td>');
+            row.append('<td><a href="#!" class="btn btn-info btn-sm">' + item.total_hours + ' hours</a></td>');
+        } else {
+            row.append('<td><a href="#!" class="btn btn-info btn-sm btn-danger">Absent</a></td>');
+            row.append('<td></td>');
+            row.append('<td></td>');
+            row.append('<td></td>');
+        }
+
+        weekTable.append(row);
+    });
+
+    return weekTable;
+}
+
+// Function to get the week number
+function getWeekNumber(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    const weekNumber = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+    return weekNumber;
+}
+
+
+function getWeekNumberInMonth(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(1); // Set the date to the first day of the month
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7)); // Find the nearest Thursday
+    const weekNumber = Math.ceil((d.getDate() + 1) / 7); // Calculate the week number within the month
+    return weekNumber;
+}
+
+
+
+
+
+
+</script>
+
+
+</body>
+</html>

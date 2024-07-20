@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+      integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="css/dashboard.css" />
+     <!-- vendor css -->
+     <!-- <link rel="stylesheet" href="assets/css/style.css"> -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <title>Bookmark Landing Page</title>
+  </head>
+  <body class="font-Poppins">
+    <!-- Header -->
+    <header>
+      <nav class="container flex items-center py-4 mt-4 sm:mt-12">
+        <div class="py-1"><%= user.user_name %></div>
+      
+        <!-- Dropdown menu -->
+        <div class="relative ml-auto sm:hidden">
+          <button type="button" class="flex items-center text-bookmark-blue focus:outline-none" onclick="toggleDropdown()">
+            <i class="text-2xl fas fa-bars"></i>
+          </button>
+          <ul class="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg hidden" id="dropdownMenu">
+           <!--<li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/checkoutdailys">CheckOutS</a></li>
+            <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/dailys">CheckInS</a></li>--> 
+            <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/dashboard">Home</a></li> 
+            <li class="text-bookmark-red cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/logout">logout</a></li>
+          </ul>
+        </div>
+      
+        <!-- Menu items -->
+        <ul class="hidden sm:flex flex-1 justify-end items-center gap-12 text-bookmark-blue uppercase text-xs" id="menuItems">
+         <!-- <li class="cursor-pointer"><a href="/checkoutdailys">CheckOutS</a></li>-->
+          <li class="cursor-pointer"><a href="/dashboard">Home</a></li>
+          <li class="cursor-pointer"><a href="/logout">Logout</a></li>
+          <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/logout" class="text-bookmark-red"></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- FAQ -->
+    <section class="bg-bookmark-white py-20">
+      <div class="container">
+        <!-- Heading -->
+        <div class="sm:w-3/4 lg:w-5/12 mx-auto px-2">
+          <div class="alert alert-success">
+            <strong><h1>Check-in Successful!</h1></strong>
+          </div>
+        </div>
+          <!-- FAQ Items -->
+
+          <br>
+          <br>
+
+          <div class="col-xl-4 col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Check-In Trends: Last 5 Days</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="chart-bar-3" style="width: 100%; height: 300px"></canvas>
+                </div>
+            </div>
+        </div>
+
+           <!-- [ chartjs-chart ] start -->
+           <div style="display: none;" class="col-xl-4 col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Bar Chart</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="chart-bar-1" style="width: 100%; height: 300px"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <canvas id="horizontal-bar-chart"></canvas>
+
+        <div style="display: none;" class="col-xl-4 col-md-6">
+          <div class="card">
+              <div class="card-header">
+                  <h5>Bar [ Stacked ] Chart</h5>
+              </div>
+              <div class="card-body">
+                  <canvas id="chart-bar-2" style="width: 100%; height: 300px"></canvas>
+              </div>
+          </div>
+      </div>
+          
+        
+       
+        </div>
+          <div class="flex items-center border-b py-4 justify-center">
+          </div>
+        </div>
+    </section>
+    <script>
+
+var check_in_users_history = JSON.parse(htmlDecode('<%= JSON.stringify(check_ins_history) %>'));
+
+// Unescape HTML entities (e.g., &#34; to ")
+function htmlDecode(input) {
+           var doc = new DOMParser().parseFromString(input, "text/html");
+           return doc.documentElement.textContent;
+       }
+
+// var check_in_users_history = JSON.parse(htmlDecode('<%= JSON.stringify(check_ins_history) %>'));
+
+//  // Unescape HTML entities (e.g., &#34; to ")
+//  function htmlDecode(input) {
+//             var doc = new DOMParser().parseFromString(input, "text/html");
+//             return doc.documentElement.textContent;
+//         }
+
+// console.log('check in user list: ', check_in_users_history)
+
+      function toggleDropdown() {
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        dropdownMenu.classList.toggle('hidden');
+      }
+  </script>
+
+
+    <!-- Required Js -->
+    <script src="assets/js/vendor-all.min.js"></script>
+    <script src="assets/js/plugins/bootstrap.min.js"></script>
+    <script src="assets/js/ripple.js"></script>
+    <script src="assets/js/pcoded.min.js"></script>
+	<script src="assets/js/menu-setting.min.js"></script>
+
+<!-- chartjs js -->
+<script src="assets/js/plugins/Chart.min.js"></script>
+<script src="assets/js/pages/chart-chart-custom.js"></script>
+
+  </body>
+</html>

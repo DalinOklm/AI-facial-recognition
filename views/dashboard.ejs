@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <title>DL Attendance</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script defer src="face-api.js"></script>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    #map {
+      height: 400px;
+      width: 100%;
+    }
+    .warning-message {
+      display: none;
+      padding: 10px;
+      background-color: #ff0000;
+      color: #ffffff;
+      text-align: center;
+      font-weight: bold;
+    }
+    @keyframes pulse {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1.5);
+        opacity: 0;
+      }
+    }
+    .pulse {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background-color: blue;
+      border-radius: 50%;
+      animation: pulse 2s ease-out infinite;
+      pointer-events: none;
+      transform-origin: center;
+    }
+    .video-container {
+      display: flex;
+      height: auto;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+      padding: 10px; /* Decreased padding to reduce space */
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background-color: #f9f9f9;
+      width: 100%;
+    }
+
+    .video-container video {
+      border-radius: 10px;
+      width: 100%;
+      height: 480px; /* Adjusted height of the video */
+    }
+
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 0px;
+      display: flex;
+      flex-direction: row;
+      justify-content: center; /* Center align content horizontally */
+      align-items: center; /* Center align content vertically */
+      text-align: center; /* Center align text */
+    }
+    .left-column {
+      flex: 1;
+    }
+    .right-column {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      padding-left: 20px;
+    }
+    .btn {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background-color: #45a049;
+    }
+    .nav-container {
+      width: 100%;
+      padding: 0 20px;
+      background-color: #f1f1f1; /* Light grey background color */
+    }
+    .form-section {
+      margin-bottom: 20px;
+    }
+    .table-section {
+      flex: 1;
+    }
+    .video-controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .video-controls button {
+      background-color: #38bdf8; /* Check-in button color */
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .video-controls button:hover {
+      background-color: #0284c7;
+    }
+    .video-container {
+      position: relative;
+      width: 640px;
+      height: 480px;
+      margin: auto;
+      margin-top: 20px;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #controls {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .btn-secondary {
+      background-color: #6c757d;
+      border-color: #6c757d;
+    }
+
+    .btn-secondary:hover {
+      background-color: #5a6268;
+      border-color: #545b62;
+    }
+
+  </style>
+</head>
+<body class="font-Poppins">
+  <!-- Navbar -->
+  <header>
+    <nav class="nav-container flex py-4 mt-4 sm:mt-12">
+      <div class="py-1"><h2><%= user.user_name %></h2></div>
+      <div class="relative ml-auto sm:hidden">
+        <button type="button" class="flex items-center text-bookmark-blue focus:outline-none" onclick="toggleDropdown()">
+          <i class="text-2xl fas fa-bars"></i>
+        </button>
+        <ul class="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg hidden" id="dropdownMenu">
+          <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/logout"><%= user.username %></a></li>
+          <li class="text-bookmark-red cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/logout">logout</a></li>
+        </ul>
+      </div>
+      <ul class="hidden sm:flex flex-1 justify-end items-center gap-12 text-bookmark-blue uppercase text-xs" id="menuItems">
+        <li class="cursor-pointer"><a href="/logout">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+<!-- Main Content -->
+<div class="container">
+  <!-- Left Column: Webcam -->
+  <div class="left-column">
+    <div class="video-container">
+      <video id="video" autoplay muted></video>
+      <canvas id="overlay" width="640" height="480"></canvas>
+    </div>
+    <div id="controls" class="mt-3">
+      <button id="toggleDetection" class="btn btn-secondary mr-2">Activate Detection</button>
+      <button id="toggleLandmarks" class="btn btn-secondary mr-2">Activate Landmarks</button>
+      <button id="register" class="btn btn-secondary">Register Face</button>
+    </div>
+  </div>
+
+  <!-- Right Column: Form, Table, and Map -->
+  <div class="right-column">
+    <!-- Form Section -->
+    <section class="bg-bookmark-white py-20">
+      <% if (checkOuts.length > 0) { %>
+        <div class="container">
+          <div id="warning-message" class="sm:w-3/4 lg:w-5/12 mx-auto px-2">
+            <% if (message=="1") { %>
+              <script>
+                // Call the showWarningMessage function with the message from the server
+                showWarningMessage();
+              </script>
+            <% } %>
+          </div>
+          <!-- Heading -->
+          <div class="sm:w-3/4 lg:w-5/12 mx-auto px-2">
+            <h1 class="text-3xl text-center text-bookmark-blue">Check out by pressing button down </h1>
+          </div>
+          <!-- FAQ Items -->
+          <div class="flex items-center border-b py-4 justify-center">
+            <form onsubmit="getGeolocation_on_button_click(event)" action="/check_out" method="POST" class="flex justify-center items-center">
+              <!-- Hidden field for user_id -->
+              <input type="hidden" name="latitude" id="latitude" value="12345">
+              <input type="hidden" name="longitude" id="longitude" value="54321">  
+              <input type="hidden" name="user_id" id="user_id" value="<%= user.id %>">
+              <button type="submit" class="bg-sky-500/75 mt-12 btn btn-purple hover:bg-bookmark-white hover:text-black">
+                Check out
+              </button>
+            </form>
+          </div>
+        </div>
+        <% checkOuts.forEach(checkOut => { %><%= checkOut.check_out %> <% }); %>
+      <% } else { %>
+          <div id="warning-message" class="sm:w-3/4 lg:w-5/12 mx-auto px-2">
+            <% if (message=="1") { %>
+              <script>
+                // Call the showWarningMessage function with the message from the server
+                showWarningMessage();
+              </script>
+            <% } %>
+          </div>
+          <!-- Heading -->
+          <div class="sm:w-3/4 lg:w-5/12 mx-auto px-2">
+            <h1 class="text-3xl text-center text-bookmark-blue">Click the button to check in </h1>
+          </div>
+          <!-- FAQ Items -->
+          <div class="flex items-center border-b py-4 justify-center">
+            <form id="checkinForm" onsubmit="getGeolocation_on_button_click(event)" action="/check_in" method="POST" class="flex justify-center items-center">
+              <!-- Hidden field for user_id -->
+              <input type="hidden" name="latitude" id="latitude" value="12345">
+              <input type="hidden" name="longitude" id="longitude" value="54321">                                  
+              <input type="hidden" name="user_id" id="user_id" value="<%= user.id %>">
+              <input type="hidden" name="user_name" id="user_name" value="">
+              <button type="submit" class="bg-sky-500/75 mt-12 btn btn-purple hover:bg-bookmark-white hover:text-black">
+                Check in 
+              </button>
+            </form>
+          </div>
+      <% } %>
+    </section>
+
+    <!-- Report Table Section -->
+    <div class="table-section">
+      <div class="card">
+        <div class="card-body">
+          <div class="row align-items-center m-l-0">
+            <div class="col-sm-6"></div>
+            <div class="col-sm-6 text-right">
+              <button class="btn btn-success btn-sm btn-round has-ripple" data-toggle="modal" data-target="#modal-report">DL-Register v3.0</button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table id="report-table" class="table table-bordered table-striped mb-0">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Check-in</th>
+                  <th>Check-out</th>
+                  <th>Hours</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (customQueryResults && customQueryResults.length > 0) { %>
+                  <% customQueryResults.forEach(function(result) { %>
+                    <tr>
+                      <% var currentDateClientFormatted = new Date(currentDate_client).toDateString(); %>
+                      <% var checkInFormatted = result.check_in.toDateString(); %>
+                      <td><%= result.check_in ? result.check_in.toDateString() : '' %></td>
+                      <td><%= result.check_in ? result.check_in.toLocaleTimeString() : '' %></td>
+                      <td><% if(result.check_out){ %>
+                        <%= result.check_out.toLocaleTimeString() %>
+                      <% } else if(result.check_in && !result.check_out && checkInFormatted != currentDateClientFormatted) { %> 
+                        <a href="#!" class="btn btn-info btn-sm">No Check out</a>
+                        <% } %></td>
+                      <td>
+                        <% if (result.check_in && !result.check_out && checkInFormatted === currentDateClientFormatted) { %>
+                          <span id="timer_<%= result.id %>"></span>
+                      <% } else if (result.check_in && !result.check_out && checkInFormatted != currentDateClientFormatted) { %>
+                        
+                      <% } else if (result.total_hours) { %>
+                          <a href="#!" class="btn btn-info btn-sm"><%= result.total_hours %></a>
+                      <% } else { %>
+                          <a style="display: none;" href="#!" class="btn btn-info btn-sm"><%= result.total_hours %></a>
+                      <% } %>                                    
+                    </td>
+                  </tr>
+                  <% }); %>
+                <% } else { %>
+                  <!-- Display an empty row when customQueryResults is null or empty -->
+                  <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map Section -->
+    <div style="margin-top: 20px; margin-bottom: 40px;" id="map"></div>
+  </div>
+</div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBHjEquGdi0lDbSpPITRJo5V2s4sJnop5Y&callback=initMap&libraries=geometry" async defer></script>
+
+  <script>
+    // Function to show the warning message
+    function showWarningMessage() {
+      const warningMessage = document.getElementById('warning-message');
+      warningMessage.innerHTML = '<div class="alert alert-danger"> \
+                <strong>Invalid Check-in Location: </strong> Your \
+                current location does not match the check-in \
+                requirements. Please ensure you are in the correct area \
+                before attempting to check in. </div>';
+      warningMessage.style.display = 'block';
+
+      // Hide the warning message after 5 seconds
+      setTimeout(function () {
+        warningMessage.style.display = 'none';
+      }, 5000);
+    }
+
+    function getGeolocation_on_button_click(event) {
+      console.log("getGeolocation_on_button_click function");
+      event.preventDefault();
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function (position) {
+            var latitude_server = position.coords.latitude;
+            var longitude_server = position.coords.longitude;
+            document.getElementById("latitude").value = latitude_server;
+            document.getElementById("longitude").value = longitude_server;
+            document.forms[0].submit();
+          },
+          function (error) {
+            console.log('Error retrieving geolocation:', error);
+          },
+          { enableHighAccuracy: true }
+        );
+      } else {
+        console.log('Geolocation is not supported by this browser.');
+      }
+    }
+
+    var latitude_server = 0;
+    var longitude_server = 0;
+
+    function getGeolocation() {
+      return new Promise((resolve, reject) => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            function (position) {
+              const latitude = position.coords.latitude;
+              const longitude = position.coords.longitude;
+              resolve({ latitude, longitude });
+            },
+            function (error) {
+              console.log('Error retrieving geolocation:', error);
+              reject(error);
+            },
+            { enableHighAccuracy: true }
+          );
+        } else {
+          reject(new Error('Geolocation is not supported by this browser.'));
+        }
+      });
+    }
+
+    async function initMap() {
+      try {
+        const { latitude, longitude } = await getGeolocation();
+
+        const latitude_ = -26.06181;
+        const longitude_ = 28.08786;
+
+        const markerPosition1 = new google.maps.LatLng(latitude_, longitude_);
+        const markerPosition2 = new google.maps.LatLng(latitude, longitude);
+
+        const bounds = new google.maps.LatLngBounds();
+        bounds.extend(markerPosition1);
+        bounds.extend(markerPosition2);
+
+        const map = new google.maps.Map(document.getElementById("map"), {
+          mapTypeId: "satellite",
+        });
+
+        let markerOptions = {
+          position: markerPosition1,
+        };
+
+        let marker = new google.maps.Marker(markerOptions);
+
+        let markerOptions2 = {
+          position: markerPosition2,
+          setIcon: {
+            path: google.maps.SymbolPath.CHEVRON_DOWN,
+            fillColor: "blue",
+            fillOpacity: 1,
+            strokeWeight: 0,
+            scale: 8,
+          },
+        };
+
+        let marker2 = new google.maps.Marker(markerOptions2);
+
+        const markerInfoWindow = new google.maps.InfoWindow({
+          content: "Office",
+        });
+
+        const markerInfoWindow_user = new google.maps.InfoWindow({
+          content: "My location",
+        });
+
+        markerInfoWindow.open(map, marker);
+        markerInfoWindow_user.open(map, marker2);
+
+        marker.setMap(map);
+        marker2.setMap(map);
+
+        const radius_office = 100;
+        const circle_office = new google.maps.Circle({
+          strokeColor: "green",
+          strokeOpacity: 0.5,
+          strokeWeight: 2,
+          fillColor: "green",
+          fillOpacity: 0.2,
+          map: map,
+          center: { lat: -26.06181, lng: 28.08786 },
+          radius: radius_office,
+        });
+
+        const polyline = new google.maps.Polyline({
+          path: [marker.getPosition(), marker2.getPosition()],
+          geodesic: true,
+          strokeColor: "blue",
+          strokeOpacity: 1.0,
+          strokeWeight: 2,
+          map: map,
+        });
+
+        const distance = google.maps.geometry.spherical.computeDistanceBetween(markerPosition1, markerPosition2);
+        const distanceInKilometers = distance / 1000;
+
+        const infoWindow = new google.maps.InfoWindow({
+          content: `Distance: ${distanceInKilometers.toFixed(2)} kilometers`,
+        });
+
+        const polylineBounds = new google.maps.LatLngBounds();
+        polylineBounds.extend(marker.getPosition());
+        polylineBounds.extend(marker2.getPosition());
+        const polylineCenter = polylineBounds.getCenter();
+        infoWindow.setPosition(polylineCenter);
+
+        infoWindow.open(map);
+
+        map.fitBounds(bounds);
+      } catch (error) {
+        console.log('Error:', error);
+      }
+    }
+
+    function updateTimer(checkInTime, timerElementId) {
+      const timerElement = document.getElementById(timerElementId);
+      const startTime = new Date(checkInTime);
+
+      function update() {
+        const currentTime = new Date();
+        const elapsedMilliseconds = currentTime - startTime;
+        const hours = Math.floor(elapsedMilliseconds / 3600000);
+        const minutes = Math.floor((elapsedMilliseconds % 3600000) / 60000);
+        const seconds = Math.floor((elapsedMilliseconds % 60000) / 1000);
+
+        timerElement.innerHTML = `<a href="#!" class="btn btn-success btn-sm">${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}</a>`;
+      }
+
+      update();
+      setInterval(update, 1000);
+    }
+
+    function isToday(checkInTime) {
+      const checkInDate = new Date(checkInTime);
+      const today = new Date();
+      return (
+        checkInDate.getFullYear() === today.getFullYear() &&
+        checkInDate.getMonth() === today.getMonth() &&
+        checkInDate.getDate() === today.getDate()
+      );
+    }
+
+    '<% customQueryResults.forEach(function(result) { %>'
+    '<% var currentDateClientFormatted = new Date(currentDate_client).toDateString(); %>'
+    '<% var checkInFormatted = result.check_in.toDateString(); %>'
+    '<% if (result.check_in && !result.check_out && checkInFormatted === currentDateClientFormatted) { %>'
+    updateTimer('<%= result.check_in %>', 'timer_<%= result.id %>');
+    '<% } %>'
+    '<% }); %>'
+
+    function toggleDropdown() {
+      const dropdownMenu = document.getElementById('dropdownMenu');
+      dropdownMenu.classList.toggle('hidden');
+    }
+
+    async function checkIfAlreadyCheckedIn(userId) {
+        try {
+          console.log("checkIfAlreadyCheckedIn function ");
+            const response = await fetch(`/api/check-in-status?user_id=${userId}`);
+            const data = await response.json();
+            return data.checkedIn;
+        } catch (error) {
+            console.error('Error checking check-in status:', error);
+            return false;
+        }
+    }
+
+    function triggerCheckIn(userName) {
+        console.log("triggerCheckIn function userName:  ",userName)
+        const userIdInput = document.getElementById("user_id");
+        const userNameInput = document.getElementById("user_name");
+        userNameInput.value = userName;
+
+        checkIfAlreadyCheckedIn(userIdInput.value).then((checkedIn) => {
+            if (!checkedIn) {
+                console.log('trigger submit button');
+                //document.getElementById("checkinForm").submit();
+            } else {
+                alert("You have already checked in today.");
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        const video = document.getElementById('video');
+        const overlay = document.getElementById('overlay');
+        let detectFaces = true;
+        let showLandmarks = true;
+        const faceTrackers = [];
+        const recognitionThreshold = 10;
+
+        async function loadModels() {
+            await Promise.all([
+                faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+                faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+                faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+                faceapi.nets.faceExpressionNet.loadFromUri('/models')
+            ]);
+            startVideo();
+        }
+
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({ video: {} })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        processVideo();
+                    };
+                })
+                .catch(err => console.error('Error accessing webcam:', err));
+        }
+
+        async function processVideo() {
+            const displaySize = { width: video.videoWidth, height: video.videoHeight };
+            faceapi.matchDimensions(overlay, displaySize);
+
+            const labeledFaceDescriptors = await fetch('/get-labeled-faces')
+                .then(res => res.json())
+                .then(data => data.map(d => new faceapi.LabeledFaceDescriptors(
+                    d.label, d.descriptors.map(descriptor => new Float32Array(descriptor))
+                )));
+
+            if (!labeledFaceDescriptors.length) {
+                console.error("No labeled face descriptors found.");
+                return;
+            }
+
+            const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
+
+            setInterval(async () => {
+                if (!detectFaces) {
+                    const ctx = overlay.getContext('2d');
+                    ctx.clearRect(0, 0, overlay.width, overlay.height);
+                    return;
+                }
+
+                const detections = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options())
+                    .withFaceLandmarks()
+                    .withFaceDescriptors()
+                    .withFaceExpressions();
+
+                const resizedDetections = faceapi.resizeResults(detections, displaySize);
+                const ctx = overlay.getContext('2d');
+                ctx.clearRect(0, 0, overlay.width, overlay.height);
+                faceapi.draw.drawDetections(overlay, resizedDetections);
+
+                if (showLandmarks) {
+                    faceapi.draw.drawFaceLandmarks(overlay, resizedDetections);
+                }
+
+                faceapi.draw.drawFaceExpressions(overlay, resizedDetections);
+
+                resizedDetections.forEach(detection => {
+                    const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+                    const { box } = detection.detection;
+                    const { x, y, width, height } = box;
+                    const label = bestMatch.label;
+
+                    const trackerIndex = faceTrackers.findIndex(tracker =>
+                        Math.abs(tracker.box.x - x) < width && Math.abs(tracker.box.y - y) < height);
+
+                    if (trackerIndex !== -1) {
+                        faceTrackers[trackerIndex].labels.push(label);
+                        if (faceTrackers[trackerIndex].labels.length >= recognitionThreshold) {
+                            faceTrackers[trackerIndex].lastConfirmedLabel = getMostFrequentLabel(faceTrackers[trackerIndex].labels);
+
+                            if (!faceTrackers[trackerIndex].smsSent && faceTrackers[trackerIndex].lastConfirmedLabel !== "unknown") {
+                                const currentTime = new Date().toLocaleString();
+
+                                // Trigger check-in if the recognized face matches the user
+                                if (faceTrackers[trackerIndex].lastConfirmedLabel !== "unknown") {
+                                    console.log("we identify:  ",faceTrackers[trackerIndex].lastConfirmedLabel);
+                                    //triggerCheckIn(faceTrackers[trackerIndex].lastConfirmedLabel);
+                                }
+
+                                faceTrackers[trackerIndex].smsSent = true;
+                            }
+
+                            faceTrackers[trackerIndex].labels.length = 0;
+                        }
+                    } else {
+                        faceTrackers.push({ box, labels: [label], lastConfirmedLabel: null, smsSent: false });
+                    }
+
+                    const drawBox = new faceapi.draw.DrawBox(box, { label: faceTrackers[trackerIndex]?.lastConfirmedLabel || label });
+                    drawBox.draw(overlay);
+                });
+            }, 100);
+        }
+
+        function getMostFrequentLabel(arr) {
+            const labelCounts = {};
+            arr.forEach(label => {
+                labelCounts[label] = (labelCounts[label] || 0) + 1;
+            });
+
+            let mostFrequentLabel = '';
+            let maxCount = 0;
+            for (const label in labelCounts) {
+                if (labelCounts[label] > maxCount) {
+                    maxCount = labelCounts[label];
+                    mostFrequentLabel = label;
+                }
+            }
+            return mostFrequentLabel;
+        }
+
+        $('#toggleDetection').click(function() {
+            detectFaces = !detectFaces;
+        });
+
+        $('#toggleLandmarks').click(function() {
+            showLandmarks = !showLandmarks;
+        });
+
+        $('#register').click(function() {
+            window.location.href = '/register';
+        });
+
+        loadModels();
+    });
+</script>
+
+</body>
+</html>

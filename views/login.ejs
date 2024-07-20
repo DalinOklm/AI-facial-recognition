@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+
+    <title>MFP | Login</title>
+
+    <style>
+        .error {
+            color: white;
+            background-color: red;
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .logo {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .logo img {
+            width: 200px; /* Set the desired width */
+        }
+        .register-link {
+            text-decoration: none;
+            color: #3498db;
+            font-weight: bold;
+        }
+    </style>
+
+</head>
+<body>
+   <div class="box">
+    <div class="container">
+        <div class="top">
+            <div class="logo">
+				<img src="/images/logo-header.png" alt="Logo">
+            </div>
+            <br>
+            <br>
+            <br>
+            <br>
+            <br>
+            <br>
+            <header>Login</header>
+        </div>
+
+        <% if (messages.error) { %>
+            <div class="error"><%= messages.error %></div>
+        <% } %>
+
+        <form action="/logins" method="POST" onsubmit="return validateForm()">
+
+            <div class="input-field">
+                <input type="text" class="input" placeholder="Username" id="user_name" name="user_name">
+                <i class='bx bx-user' ></i>
+            </div>
+    
+            <div class="input-field">
+                <input type="Password" class="input" placeholder="Password" id="password" name="password">
+                <i class='bx bx-lock-alt'></i>
+            </div>
+    
+            <div class="input-field">
+                <input type="submit" class="submit" value="Login" id="">
+            </div>
+
+        </form>
+
+        <div class="two-col">
+            <div class="two" style="margin-left: 20px;">
+                <label><a href="/register">Register</a></label>
+            </div>
+        </div>
+        <br>
+        <br>
+        <p style="text-align: center; color: white;">DL-register version 2.0</p>
+    </div>
+</div>  
+</body>
+	 <script src="/socket.io/socket.io.js"></script>
+<script>
+	
+	    const socket = io();
+    
+    const messageForm = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+    const messages = document.getElementById('messages');
+
+    messageForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const message = messageInput.value;
+      socket.emit('chatMessage', message);
+      messageInput.value = '';
+    });
+
+    socket.on('chatMessage', (message) => {
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message');
+      messageElement.textContent = message;
+      messages.appendChild(messageElement);
+      messages.scrollTop = messages.scrollHeight;
+    });
+	
+    function validateForm() {
+        const username = document.getElementById("user_name").value;
+        const password = document.getElementById("password").value;
+
+        if (username.trim() === "" || password.trim() === "") {
+            alert("Please enter both username and password.");
+            return false; // Prevent form submission
+        }
+    }
+</script>
+</html>

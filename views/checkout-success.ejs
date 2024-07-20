@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+      integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="css/dashboard.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Bookmark Landing Page</title>
+  </head>
+  <body class="font-Poppins">
+    <!-- Header -->
+    <header>
+      <nav class="container flex items-center py-4 mt-4 sm:mt-12">
+        <div class="py-1"><%= user.user_name %></div>
+      
+        <!-- Dropdown menu -->
+        <div class="relative ml-auto sm:hidden">
+          <button type="button" class="flex items-center text-bookmark-blue focus:outline-none" onclick="toggleDropdown()">
+            <i class="text-2xl fas fa-bars"></i>
+          </button>
+          <ul class="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg hidden" id="dropdownMenu">
+           <!--<li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/checkoutdailys">CheckOutS</a></li>
+            <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/dailys">CheckInS</a></li>--> 
+            <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/dashboard">Home</a></li> 
+            <li class="text-bookmark-red cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/logout">logout</a></li>
+          </ul>
+        </div>
+      
+        <!-- Menu items -->
+        <ul class="hidden sm:flex flex-1 justify-end items-center gap-12 text-bookmark-blue uppercase text-xs" id="menuItems">
+         <!-- <li class="cursor-pointer"><a href="/checkoutdailys">CheckOutS</a></li>-->
+          <li class="cursor-pointer"><a href="/checks">Home</a></li>
+          <li class="cursor-pointer"><a href="/checks">Logout</a></li>
+          <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/logout" class="text-bookmark-red"></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- FAQ -->
+    <section class="bg-bookmark-white py-20">
+      <div class="container">
+        <!-- Heading -->
+        <div class="sm:w-3/4 lg:w-5/12 mx-auto px-2">
+          <h1 class="text-3xl text-center text-bookmark-blue">successfully checked out</h1>
+        </div>
+          <!-- FAQ Items -->
+
+          <div class="flex items-center border-b py-4 justify-center">
+
+
+          </div>
+        </div>
+    </section>
+    <script>
+      function toggleDropdown() {
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        dropdownMenu.classList.toggle('hidden');
+      }
+  </script>
+  </body>
+</html>

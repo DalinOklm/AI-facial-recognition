@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+      integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="css/dashboard.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/style.css">
+	
+    <title>MFP</title>
+    <style>
+              /* Set the map container size */
+              #map {
+                height: 400px;
+                width: 100%;
+              }
+
+            .warning-message {
+            display: none;
+            padding: 10px;
+            background-color: #ff0000;
+            color: #ffffff;
+            text-align: center;
+            font-weight: bold;
+          }
+
+
+                    @keyframes pulse {
+            0% {
+              transform: scale(0);
+              opacity: 0;
+            }
+            50% {
+              transform: scale(1);
+              opacity: 1;
+            }
+            100% {
+              transform: scale(1.5);
+              opacity: 0;
+            }
+          }
+
+          .pulse {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: blue;
+            border-radius: 50%;
+            animation: pulse 2s ease-out infinite;
+            pointer-events: none;
+            transform-origin: center;
+          }
+
+
+    </style>
+  </head>
+  <script>
+       // Function to show the warning message
+       function showWarningMessage() {
+          const warningMessage = document.getElementById('warning-message');
+          //warningMessage.textContent = message;
+          console.log("we are in showWarningMessage()");
+          warningMessage.innerHTML = '<div class="alert alert-danger"> \
+                    <strong>Invalid Check-in Location: </strong> Your \
+                     current location does not match the check-in \
+                     requirements. Please ensure you are in the correct area \
+                    before attempting to check in. </div>';
+          warningMessage.style.display = 'block';
+
+          // Hide the warning message after 5 seconds
+          setTimeout(function () {
+            warningMessage.style.display = 'none';
+          }, 5000);
+        }
+
+  </script>
+  <body class="font-Poppins">
+    <!-- Header -->
+    <header>
+      <nav class="container flex items-center py-4 mt-4 sm:mt-12">
+        <div class="py-1"><%= user.user_name %></div>
+      
+        <!-- Dropdown menu -->
+        <div class="relative ml-auto sm:hidden">
+          <button type="button" class="flex items-center text-bookmark-blue focus:outline-none" onclick="toggleDropdown()">
+            <i class="text-2xl fas fa-bars"></i>
+          </button>
+          <ul class="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg hidden" id="dropdownMenu">
+           <!--<li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/checkoutdailys">CheckOutS</a></li>
+            <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/dailys">CheckInS</a></li>--> 
+            <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/logout"><%= user.username %></a></li> 
+            <li class="text-bookmark-red cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/logout">logout</a></li>
+          </ul>
+        </div>
+      
+        <!-- Menu items -->
+        <ul class="hidden sm:flex flex-1 justify-end items-center gap-12 text-bookmark-blue uppercase text-xs" id="menuItems">
+         <!-- <li class="cursor-pointer"><a href="/checkoutdailys">CheckOutS</a></li>
+          <li class="cursor-pointer"><a href="/dailys"><%= user.user_name %></a></li>-->
+          <li class="cursor-pointer"><a href="/logout">Logout</a></li>
+          <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/logout" class="text-bookmark-red"></a></li>
+        </ul>
+      </nav>
+      
+    </header>
+
+   
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      var message = "new user";
+      socket.emit('chatMessage', message);
+   
+    </script>
+    <!-- end chat app -->
+
+      <!-- FAQ -->
+      <section class="bg-bookmark-white py-20">
+        <% if (checkOuts.length > 0) { %>
+        <div class="container">
+          <div id="warning-message" class="sm:w-3/4 lg:w-5/12 mx-auto px-2">
+            <% 
+             if (message=="1") { %>
+               <script>
+                 // Call the showWarningMessage function with the message from the server
+                 showWarningMessage();
+               </script>
+             <% } %>
+           </div>
+          <!-- Heading -->
+          <div class="sm:w-3/4 lg:w-5/12 mx-auto px-2">
+            <h1 class="text-3xl text-center text-bookmark-blue">Check out by pressing button down </h1>
+          </div>
+            <!-- FAQ Items -->
+
+            <div class="flex items-center border-b py-4 justify-center">
+
+                  <form onsubmit="getGeolocation_on_button_click(event)" action="/check_out" method="POST">
+                        <!-- Hidden field for user_id -->
+                        <input type="hidden" name="latitude" id="latitude" value="12345">
+                        <input type="hidden" name="longitude" id="longitude" value="54321">  
+                    <input type="hidden" name="user_id" id="user_id" value="<%= user.id %>">
+                    <button type="submit" class="bg-sky-500/75 mt-12 flex self-center btn btn-purple hover:bg-bookmark-white hover:text-black justify-center">
+                      Check out
+                    </button>
+                  </form>
+            </div>
+          </div>
+        <% checkOuts.forEach(checkOut => { %><%= checkOut.check_out %> <% }); %>
+              
+        <% } else { %>
+              <div class="container">
+                <div id="warning-message" class="sm:w-3/4 lg:w-5/12 mx-auto px-2">
+                 <% 
+                  if (message=="1") { %>
+                    <script>
+                      // Call the showWarningMessage function with the message from the server
+                      showWarningMessage();
+                    </script>
+                  <% } %>
+                </div>
+                            <!-- Heading -->
+                <div class="sm:w-3/4 lg:w-5/12 mx-auto px-2">
+                        <h1 class="text-3xl text-center text-bookmark-blue">Click the button to check in </h1>
+                      </div>
+                      <!-- FAQ Items -->
+              
+                      <div class="flex items-center border-b py-4 justify-center">
+
+                          <form onsubmit="getGeolocation_on_button_click(event)" action="/check_ins" method="POST">
+                                <!-- Hidden field for user_id -->
+                                <input type="hidden" name="latitude" id="latitude" value="12345">
+                                <input type="hidden" name="longitude" id="longitude" value="54321">                                  
+                                <input type="hidden" name="user_id" id="user_id" value="<%= user.id %>">
+                                <button type="submit" class="bg-sky-500/75 mt-12 flex self-center btn btn-purple hover:bg-bookmark-white hover:text-black justify-center">
+                                  Check in 
+                                </button>
+                          </form>
+                      </div>
+              </div>
+        <% } %>
+
+  </section>
+
+     <!-- [ Main Content ] start -->
+<div class="row">
+  <!-- customar project  start -->
+  <div class="col-xl-12">
+      <div class="card">
+          <div class="card-body">
+              <div class="row align-items-center m-l-0">
+                  <div class="col-sm-6">
+                  </div>
+                  <div class="col-sm-6 text-right">
+                      <button class="btn btn-success btn-sm btn-round has-ripple" data-toggle="modal" data-target="#modal-report">DL-Register v3.0</button>
+                  </div>
+              </div>
+              <div class="table-responsive">
+                  <table id="report-table" class="table table-bordered table-striped mb-0">
+                      <thead>
+                          <tr>
+                              <th>Date</th>
+                              <th>Check-in</th>
+                              <th>Check-out</th>
+                              <th>Hours</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                        <% if (customQueryResults && customQueryResults.length > 0) { %>
+                            <% customQueryResults.forEach(function(result) { %>
+                                <tr>
+                                  <% var currentDateClientFormatted = new Date(currentDate_client).toDateString(); %>
+                                  <% var checkInFormatted = result.check_in.toDateString(); %>
+                                    <td><%= result.check_in ? result.check_in.toDateString() : '' %></td>
+                                    <td><%= result.check_in ? result.check_in.toLocaleTimeString() : '' %></td>
+                                    <td><% if(result.check_out){ %>
+                                      <%= result.check_out.toLocaleTimeString() %>
+                                    <% } else if(result.check_in && !result.check_out && checkInFormatted != currentDateClientFormatted) { %> 
+                                      <a href="#!" class="btn btn-info btn-sm">No Check out</a>
+                                      <% } %></td>
+                                    <td>
+                                      <% if (result.check_in && !result.check_out && checkInFormatted === currentDateClientFormatted) { %>
+                                        <span id="timer_<%= result.id %>"></span>
+                                    <% } else if (result.check_in && !result.check_out && checkInFormatted != currentDateClientFormatted) { %>
+                                      
+                                    <% } else if (result.total_hours) { %>
+                                        <a href="#!" class="btn btn-info btn-sm"><%= result.total_hours %></a>
+                                    <% } else { %>
+                                        <a style="display: none;" href="#!" class="btn btn-info btn-sm"><%= result.total_hours %></a>
+                                    <% } %>                                    
+                                  </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <!-- Display an empty row when customQueryResults is null or empty -->
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                    
+                  </table>
+              </div>
+          </div>
+      </div>
+  </div>
+  <!-- customar project  end -->
+</div>
+<!-- [ Main Content ] end -->
+
+
+  
+
+    
+  <div style="margin-bottom: 100px;" id="map"></div>
+
+  
+</body>
+</html>
+
+
+    <!-- <div>
+      <h3>your current location coordinate</h3>
+      user-Latitude: <span><%= userLatitudefront %></span><br>
+      user-Longitude: <span><%= userLongitudefront %></span>
+    </div>
+    
+
+    <div id="location-info" class="hidden">
+      Latitude: <span id="latitude_show"></span><br>
+      Longitude: <span id="longitude_show"></span>
+    </div> -->
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <script>
+
+      
+
+         console.log("heyyyy");
+          socket.on('checkInUsers', (data) => {
+            console.log("heyyyy 2");
+                console.log(data);
+
+          })
+
+    function getGeolocation_on_button_click(event) {
+      event.preventDefault();
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function (position) {
+          var latitude_server = position.coords.latitude;
+          var longitude_server = position.coords.longitude;
+
+        // Display the latitude and longitude values in the HTML
+        // document.getElementById("latitude_show").textContent = latitude_server;
+        // document.getElementById("longitude_show").textContent = longitude_server;
+
+        // Update the latitude and longitude values
+        document.getElementById("latitude").value = latitude_server;
+        document.getElementById("longitude").value = longitude_server;
+
+        // Show the location information div
+        //document.getElementById("location-info").classList.remove("hidden");
+        
+
+        // Submit the form
+        document.forms[0].submit();
+          },
+          function (error) {
+            // Handle error cases
+            console.log('Error retrieving geolocation:', error);
+            // Display an error message to the user or take appropriate action
+          },
+          { enableHighAccuracy: true } // Add the enableHighAccuracy option
+        );
+      } else {
+        console.log('Geolocation is not supported by this browser.');
+        // Display an error message to the user or take appropriate action
+      }
+    }
+
+    var latitude_server = 0;
+    var longitude_server = 0;
+
+        function getGeolocation() {
+        return new Promise((resolve, reject) => {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              function (position) {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                console.log("position.coords.latitude: ", latitude);
+                console.log("position.coords.longitude: ", longitude);
+
+                resolve({ latitude, longitude });
+              },
+              function (error) {
+                console.log('Error retrieving geolocation:', error);
+                reject(error);
+              },
+              { enableHighAccuracy: true }
+            );
+          } else {
+            reject(new Error('Geolocation is not supported by this browser.'));
+          }
+        });
+      }
+
+
+      async function initMap() {
+        try {
+          console.log("await getGeolocation");
+          const { latitude, longitude } = await getGeolocation();
+
+          console.log("getGeolocation coordinate result");
+          console.log("in initMap, latitude_server: ", latitude);
+          console.log("in initMap, longitude_server: ", longitude);
+
+          // Specify the latitude and longitude
+          const latitude_ = -26.06181;
+          const longitude_ = 28.08786;
+
+          const markerPosition1 = new google.maps.LatLng(latitude_, longitude_);
+          const markerPosition2 = new google.maps.LatLng(latitude, longitude);
+
+          const bounds = new google.maps.LatLngBounds();
+          bounds.extend(markerPosition1);
+          bounds.extend(markerPosition2);
+
+          // Create a map object centered at the specified location
+          const map = new google.maps.Map(document.getElementById("map"), {
+            mapTypeId: "satellite", // Set the map type to satellite
+          });
+
+          let markerOptions = {
+            position: markerPosition1,
+          };
+
+          let marker = new google.maps.Marker(markerOptions);
+
+          let markerOptions2 = {
+            position: markerPosition2,
+            setIcon: {
+              path: google.maps.SymbolPath.CHEVRON_DOWN, // Set the marker shape
+              fillColor: "blue", // Set the marker fill color
+              fillOpacity: 1, // Set the marker fill opacity
+              strokeWeight: 0, // Set the marker stroke weight
+              scale: 8, // Set the marker size
+            },
+          };
+
+          let marker2 = new google.maps.Marker(markerOptions2);
+          //marker2.setMap(map);
+
+
+          // Create an info window for the first marker
+          const markerInfoWindow = new google.maps.InfoWindow({
+            content: "Office", // Replace with your desired content
+          });
+
+
+           // Create an info window for the first marker
+           const markerInfoWindow_user = new google.maps.InfoWindow({
+            content: "My location", // Replace with your desired content
+          });
+
+          // Open the info window for the first marker on page load
+          markerInfoWindow.open(map, marker);
+          markerInfoWindow_user.open(map, marker2);
+
+        
+          //marker2.setAnimation(google.maps.Animation.BOUNCE)
+
+          //let marker2 = new google.maps.Marker(markerOptions2);
+
+          marker.setMap(map);
+          marker2.setMap(map);
+
+      
+
+           // Create a circle overlay with a transparent radius
+           const radius_office = 100; // Radius in meters
+          const circle_office = new google.maps.Circle({
+            strokeColor: "green", // Navy blue color
+            strokeOpacity: 0.5, // Adjust the opacity as desired (0.0 to 1.0)
+            strokeWeight: 2,
+            fillColor: "green", // Navy blue color
+            fillOpacity: 0.2, // Adjust the opacity as desired (0.0 to 1.0)
+            map: map,
+            center: { lat: -26.06181, lng: 28.08786 },
+            radius: radius_office,
+          });
+
+        
+
+          // Create a polyline to link the markers
+          const polyline = new google.maps.Polyline({
+            path: [
+              marker.getPosition(),
+              marker2.getPosition(),
+            ],
+            geodesic: true,
+            strokeColor: "blue", // Set the color of the line
+            strokeOpacity: 1.0,
+            strokeWeight: 2,
+            map: map,
+          });
+
+
+           // Calculate the distance between the two points
+          const distance = google.maps.geometry.spherical.computeDistanceBetween(
+            markerPosition1,
+            markerPosition2
+          );
+
+
+          // Convert distance from meters to kilometers
+          const distanceInKilometers = distance / 1000;
+
+          // Create an info window to display the distance in kilometers
+          const infoWindow = new google.maps.InfoWindow({
+            content: `Distance: ${distanceInKilometers.toFixed(2)} kilometers`,
+          });
+
+
+           // Create an info window to display the distance
+          // const infoWindow = new google.maps.InfoWindow({
+          //   content: `Distance: ${distance.toFixed(2)} meters`,
+          // });
+
+
+           // Position the info window at the center of the polyline
+          const polylineBounds = new google.maps.LatLngBounds();
+          polylineBounds.extend(marker.getPosition());
+          polylineBounds.extend(marker2.getPosition());
+          const polylineCenter = polylineBounds.getCenter();
+          infoWindow.setPosition(polylineCenter);
+
+
+          // Open the info window
+          infoWindow.open(map);
+
+
+          // Fit the map to the bounds
+          map.fitBounds(bounds);
+
+          // Render the map with the updated latitude and longitude values
+          // Your code for rendering the map with markers goes here
+        } catch (error) {
+          // Handle any errors that occurred during geolocation retrieval
+          console.log('Error:', error);
+        }
+}
+    </script>
+
+
+
+<script>
+          function updateTimer(checkInTime, timerElementId) {
+              const timerElement = document.getElementById(timerElementId);
+              const startTime = new Date(checkInTime);
+              
+              function update() {
+                  const currentTime = new Date();
+                  const elapsedMilliseconds = currentTime - startTime;
+                  const hours = Math.floor(elapsedMilliseconds / 3600000);
+                  const minutes = Math.floor((elapsedMilliseconds % 3600000) / 60000);
+                  const seconds = Math.floor((elapsedMilliseconds % 60000) / 1000);
+                  
+                  timerElement.innerHTML = `<a href="#!" class="btn btn-success btn-sm">${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}</a>`;
+              }
+
+              // Initial update
+              update();
+
+              // Update the timer every second (1000 milliseconds)
+              setInterval(update, 1000);
+          }
+
+           function isToday(checkInTime) { 
+              const checkInDate = new Date(checkInTime); 
+              const today = new Date(); 
+              return ( 
+                  checkInDate.getFullYear() === today.getFullYear() && 
+                  checkInDate.getMonth() === today.getMonth() && 
+                  checkInDate.getDate() === today.getDate() 
+              ); 
+          } 
+
+          console.log('<%= currentDate_client %>');
+
+          // Call updateTimer for each row where the timer should be displayed
+         
+          '<% customQueryResults.forEach(function(result) { %>'
+          '<% var currentDateClientFormatted = new Date(currentDate_client).toDateString(); %>'
+          '<% var checkInFormatted = result.check_in.toDateString(); %>'
+              '<% if (result.check_in && !result.check_out && checkInFormatted === currentDateClientFormatted) { %>'
+                  updateTimer('<%= result.check_in %>', 'timer_<%= result.id %>');
+              '<% } %>'
+          '<% }); %>'
+
+
+</script>
+
+
+
+
+
+
+ <!-- Load the Google Maps JavaScript API asynchronously -->
+ <!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBHjEquGdi0lDbSpPITRJo5V2s4sJnop5Y&callback=initMap" async defer></script> -->
+    
+ <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBHjEquGdi0lDbSpPITRJo5V2s4sJnop5Y&callback=initMap&libraries=geometry" async defer></script>
+
+ <!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBHjEquGdi0lDbSpPITRJo5V2s4sJnop5Y&libraries=geometry"></script> -->
+
+
+
+    <script>
+      function toggleDropdown() {
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        dropdownMenu.classList.toggle('hidden');
+      }
+  </script>
+  </body>
+</html>

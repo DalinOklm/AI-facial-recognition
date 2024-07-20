@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+      integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="css/dashboard.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>MFP</title>
+    <style>
+      .highlight {
+          animation: highlightAnimation 10s ease infinite;
+        }
+
+        @keyframes highlightAnimation {
+          0%, 100% {
+            background-color: transparent;
+          }
+          50% {
+            background-color: rgb(212, 237, 218);
+          }
+        }
+        </style>
+  </head>
+  <body class="font-Poppins">
+    <!-- Header -->
+    <header>
+      <nav class="container flex items-center py-4 mt-4 sm:mt-12">
+        <div class="py-1"></div>
+      
+        <!-- Dropdown menu -->
+        <div class="relative ml-auto sm:hidden">
+          <button type="button" class="flex items-center text-bookmark-blue focus:outline-none" onclick="toggleDropdown()">
+            <i class="text-2xl fas fa-bars"></i>
+          </button>
+          <ul class="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg hidden" id="dropdownMenu">
+            <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/check_outs">CheckOutS</a></li>
+            <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/check_ins">CheckInS</a></li>
+            <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/dashboard">Dashboard</a></li>
+            <li class="text-bookmark-red cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/logout">logout</a></li>
+          </ul>
+        </div>
+      
+        <!-- Menu items -->
+        <ul class="hidden sm:flex flex-1 justify-end items-center gap-12 text-bookmark-blue uppercase text-xs" id="menuItems">
+            <li class="cursor-pointer"><a href="/check_outs">CheckOutS</a></li>
+            <li class="cursor-pointer"><a href="/check_ins">CheckInS</a></li>
+          <li class="cursor-pointer"><a href="/logout">Logout</a></li>
+          <li class="cursor-pointer py-2 px-4 hover:bg-gray-200"><a href="/logout" class="text-bookmark-red"></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- FAQ -->
+<section class="bg-bookmark-white py-20">
+<div class="container">
+  <div class="lg:w-2/4 mx-auto py-8 px-6 bg-white rounded-xl">
+    <h1 class="font-bold text-5xl text-center mb-8">Employee check out list</h1>
+    <hr>
+    <button onclick="generate_checkout_CSV()" type="submit" class="bg-sky-500/75 mt-12 flex self-center btn btn-purple hover:bg-bookmark-white hover:text-black justify-center">
+      Export to CSV
+    </button>
+    <br>
+    <hr>
+    <br>
+    <button id="toggleSoundButton" class="bg-blue-500 text-white py-2 px-4 rounded-lg">
+      Activate Sound
+    </button>
+    <br>
+    <br>
+    <hr>
+    <div class="mt-2" id="checkOutContainer">
+        <% check_outs.forEach(check_out => { %>
+            <div class="py-4 flex items-center border-b border-gray-300 py-3">
+              <div class="flex-1 pr-8">
+                <% if (check_out.user_name) { %>
+                  <h3 class="text-lg font-semibold">Check out: <%= check_out.check_out.toLocaleTimeString() %></h3>
+                <% } else { %>
+                  <h3 class="text-lg font-semibold">user_name not found</h3>
+                <% } %>
+                <p class="text-gray-500">Date: <%= check_out.check_out.toLocaleDateString() %></p>
+                <% if (check_out.user_name) { %>
+                  <p class="text-gray-500"><%= check_out.user_name %></p>
+                <% } %>
+              </div>
+              <div class="flex space-x-3">
+                <button class="py-2 px-2 bg-green-500 text-white rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          <% }); %>
+      
+    </div>
+  </div>
+</div>
+</section>
+
+    <!-- Footer -->
+    <footer class="bg-bookmark-blue py-8">
+
+      <script>
+
+      function generate_checkout_CSV() {
+              window.location.href = '/generate_checkout_csv';
+            }
+
+        function toggleDropdown() {
+          const dropdownMenu = document.getElementById('dropdownMenu');
+          dropdownMenu.classList.toggle('hidden');
+        }
+    </script>
+
+      <script src="/socket.io/socket.io.js"></script>
+      <script>
+        const socket = io();
+
+            // JavaScript section
+          const toggleSoundButton = document.getElementById('toggleSoundButton');
+          let soundEnabled = false;
+
+          toggleSoundButton.addEventListener('click', () => {
+            soundEnabled = !soundEnabled; // Toggle the sound state
+            toggleSoundButton.textContent = soundEnabled ? 'Sound On' : 'Sound Off';
+          });
+
+
+        socket.on('check_out_notification', (data) => {
+                  console.log(data);
+
+                  // Access the separate fields
+                  const userName = data.userName;
+                  const checkInDate = data.checkInDate;
+                  const checkInTime = data.checkInTime;
+
+                  console.log("userName: ", userName);
+                  console.log("checkInDate: ", checkInDate);
+                  console.log("checkInTime: ", checkInTime);
+
+                  // Create new elements
+                  const checkInDiv = document.createElement('div');
+                  checkInDiv.classList.add('py-4', 'flex', 'items-center', 'border-b', 'border-gray-300', 'py-3');
+
+                  const contentDiv = document.createElement('div');
+                  contentDiv.classList.add('flex-1', 'pr-8');
+
+                  const userNameHeading = document.createElement('h3');
+                  userNameHeading.classList.add('text-lg', 'font-semibold');
+                  userNameHeading.textContent = `Check out: ${checkInTime}`;
+
+                  const dateParagraph = document.createElement('p');
+                  dateParagraph.classList.add('text-gray-500');
+                  dateParagraph.textContent = `Date: ${checkInDate}`;
+
+                  const userNameParagraph = document.createElement('p');
+                  userNameParagraph.classList.add('text-gray-500');
+                  userNameParagraph.textContent = userName;
+
+                  // Append elements to their parent
+                  contentDiv.appendChild(userNameHeading);
+                  contentDiv.appendChild(dateParagraph);
+                  contentDiv.appendChild(userNameParagraph);
+
+                  checkInDiv.appendChild(contentDiv);
+
+                  // Create and append the button element
+                  const buttonDiv = document.createElement('div');
+                  buttonDiv.classList.add('flex', 'space-x-3');
+
+                  const button = document.createElement('button');
+                  button.classList.add('py-2', 'px-2', 'bg-green-500', 'text-white', 'rounded-lg');
+
+                  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                  svg.setAttribute("fill", "none");
+                  svg.setAttribute("viewBox", "0 0 24 24");
+                  svg.setAttribute("stroke-width", "1.5");
+                  svg.setAttribute("stroke", "currentColor");
+                  svg.classList.add('w-6', 'h-6');
+
+                  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                  path.setAttribute("stroke-linecap", "round");
+                  path.setAttribute("stroke-linejoin", "round");
+                  path.setAttribute("d", "M4.5 12.75l6 6 9-13.5");
+
+                  svg.appendChild(path);
+                  button.appendChild(svg);
+                  buttonDiv.appendChild(button);
+
+                  checkInDiv.appendChild(buttonDiv);
+
+                          // Add the 'highlight' class to the new check-in element
+                  checkInDiv.classList.add('highlight');
+
+                // Get the checkOutContainer
+                const checkOutContainer = document.getElementById('checkOutContainer');
+
+                // Get the first child (topmost) of the checkInContainer
+                const firstChild = checkOutContainer.firstChild;
+
+                // Insert the new check-in div before the first child
+                checkOutContainer.insertBefore(checkInDiv, firstChild);
+
+                // Play the sound only if sound is enabled
+                if (soundEnabled) {
+                  playCheckinSound();
+                }
+
+                // After 3 seconds, remove the 'highlight' class
+                setTimeout(() => {
+                  checkInDiv.classList.remove('highlight');
+                }, 3000);
+      });
+
+            function playCheckinSound() {
+              const audio = document.getElementById('checkinAudio');
+              const audioSource = '/sounds/notify_bell.wav'; // Update with the actual path
+
+              audio.muted = false;
+              audio.src = audioSource;
+              audio.currentTime = 0;
+              audio.play();
+            }
+
+
+
+      </script>
+
+      <audio id="checkinAudio" muted>
+        <source src="" type="audio/wav">
+      </audio>
+
+    </footer>
+</body>
+</html>

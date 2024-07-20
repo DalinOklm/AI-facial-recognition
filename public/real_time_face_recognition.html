@@ -45,7 +45,6 @@
 </head>
 <body>
   <div class="container text-center">
-    <!-- <h1>AI Facial Recognition</h1> -->
     <div class="video-container">
       <video id="video" autoplay muted></video>
       <canvas id="overlay" width="640" height="480"></canvas>
@@ -63,9 +62,8 @@
       const overlay = document.getElementById('overlay');
       let detectFaces = true;
       let showLandmarks = true;
-      const faceLabelCounts_array = [];
+      const faceTrackers = [];
       const recognitionThreshold = 10; // Number of consistent frames to recognize a face
-      let lastConfirmedLabel = null;
 
       async function loadModels() {
         console.log("Loading models...");
@@ -132,28 +130,52 @@
 
           faceapi.draw.drawFaceExpressions(overlay, resizedDetections);
 
-          resizedDetections.forEach(detection => {
-            const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
-            const { box } = detection.detection;
-            const { x, y, width, height } = box;
-            const label = bestMatch.label;
-            console.log("label: ",label);
+       // Inside resizedDetections.forEach loop
+      resizedDetections.forEach(detection => {
+        const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+        const { box } = detection.detection;
+        const { x, y, width, height } = box;
+        const label = bestMatch.label;
+        console.log("label: ", label);
 
-            if (label !== 'unknown') {
-              faceLabelCounts_array.push(label);
-              
-              if (faceLabelCounts_array.length >= recognitionThreshold) {
-                const mostFrequentLabel = getMostFrequentLabel(faceLabelCounts_array);
-                lastConfirmedLabel = mostFrequentLabel;
-                faceLabelCounts_array.length = 0; // Reset the array
-              }
+        const trackerIndex = faceTrackers.findIndex(tracker =>
+          Math.abs(tracker.box.x - x) < width && Math.abs(tracker.box.y - y) < height);
+
+        if (trackerIndex !== -1) {
+          faceTrackers[trackerIndex].labels.push(label);
+          if (faceTrackers[trackerIndex].labels.length >= recognitionThreshold) {
+            faceTrackers[trackerIndex].lastConfirmedLabel = getMostFrequentLabel(faceTrackers[trackerIndex].labels);
+
+            if (!faceTrackers[trackerIndex].smsSent && faceTrackers[trackerIndex].lastConfirmedLabel !== "unknown") {
+              const currentTime = new Date().toLocaleString();
+              $.ajax({
+                url: '/send-sms',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                  to: '++27 60 415 4773', // Replace with recipient phone number
+                  message: `Hi ${faceTrackers[trackerIndex].lastConfirmedLabel}, Your check-in time is ${currentTime}.`
+                }),
+                success: function(response) {
+                  console.log('SMS sent successfully');
+                },
+                error: function(xhr, status, error) {
+                  console.error('Error sending SMS:', error);
+                }
+              });
+
+              faceTrackers[trackerIndex].smsSent = true; // Set flag to prevent multiple SMS sends
             }
 
-            if (lastConfirmedLabel) {
-              const drawBox = new faceapi.draw.DrawBox({ x, y, width, height }, { label: lastConfirmedLabel });
-              drawBox.draw(overlay);
-            }
-          });
+            faceTrackers[trackerIndex].labels.length = 0; // Reset the array
+          }
+        } else {
+          faceTrackers.push({ box, labels: [label], lastConfirmedLabel: null, smsSent: false });
+        }
+
+        const drawBox = new faceapi.draw.DrawBox(box, { label: faceTrackers[trackerIndex]?.lastConfirmedLabel || label });
+        drawBox.draw(overlay);
+      });
         }, 100);
       }
 
